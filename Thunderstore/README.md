@@ -1,5 +1,3 @@
-# Tweyen, Eternal of the Grand Blue Skies
-
 [![GitHub Suggestions / Issues](https://raw.githubusercontent.com/nepsionion/TweyenR2RMod/main/Art/Readme/github_issues.png)](https://github.com/nepsionion/TweyenR2RMod/issues)
 
 Tweyen, or Song (see config), is the second Eternal and master of the bow from Granblue Fantasy. She is a ranged hunter who has two gameplay styles, one for each of her passives.
