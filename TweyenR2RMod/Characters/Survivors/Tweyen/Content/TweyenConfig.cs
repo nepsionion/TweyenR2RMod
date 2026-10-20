@@ -31,7 +31,8 @@ namespace TweyenR2RMod.Survivors.Tweyen
                 "Play her voice lines when she is hurt and when she dies.");
             movementSound = Modules.Config.BindAndOptions(section, "Movement sound", true,
                 "Play the sound of her walking and running.");
-            restockableTwoCrown = Modules.Config.BindAndOptions(section, "Restockable Two-Crown's Strife", false,
+            // key names can't contain ' (BepInEx throws, and the whole mod fails to load): typographic apostrophe
+            restockableTwoCrown = Modules.Config.BindAndOptions(section, "Restockable Two-Crown’s Strife", false,
                 "Two-Crown's Strife recharges and can be restocked like any other skill, instead of being usable once per stage. Requires restart.");
             japaneseName = Modules.Config.BindAndOptions(section, "Japanese name", false,
                 "Rename Tweyen (EN name) to Song (JP name). Requires restart.");
@@ -40,7 +41,20 @@ namespace TweyenR2RMod.Survivors.Tweyen
             RestockableTwoCrown = restockableTwoCrown.Value;
             UnlockDlcSkins = unlockDlcSkins.Value;
             useJapaneseName = japaneseName.Value;
-            Modules.Config.SetModInfo(assetBundle.LoadAsset<Texture>("TweyenCharacter"), Named("Tweyen of the Eternals."));
+            Modules.Config.SetModInfo(ModIcon(), Named("Tweyen of the Eternals."));
+        }
+
+        /// <summary>The mod's icon (Thunderstore's icon.png, embedded in the DLL), or null if it can't be read.</summary>
+        private static Texture2D ModIcon()
+        {
+            using (var stream = typeof(TweyenConfig).Assembly.GetManifestResourceStream("TweyenR2RMod.icon.png"))
+            {
+                if (stream == null) return null;
+                var bytes = new byte[stream.Length];
+                stream.Read(bytes, 0, bytes.Length);
+                var texture = new Texture2D(2, 2);
+                return texture.LoadImage(bytes) ? texture : null;
+            }
         }
 
         /// <summary>The text with every "Tweyen" changed to "Song" when the Japanese name option is on (at startup).</summary>

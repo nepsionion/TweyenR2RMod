@@ -400,6 +400,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
             var missing = new System.Collections.Generic.List<string>();
             foreach (UnlockableDef skin in TweyenUnlocks.OtherSkins)
             {
+                if (!skin) return; // the mod didn't load properly: nothing to check against
                 bool available = RoR2.EntitlementManagement.EntitlementManager.localUserEntitlementTracker.UserHasEntitlementForUnlockable(localUser, skin);
                 if (available && !userProfile.HasUnlockable(skin)) missing.Add(skin.cachedName);
             }

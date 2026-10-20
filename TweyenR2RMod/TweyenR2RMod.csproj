@@ -41,6 +41,11 @@
 		</Reference>
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- the mod's icon (Thunderstore's), for Risk of Options' menu -->
+		<EmbeddedResource Include="..\Thunderstore\icon.png" LogicalName="TweyenR2RMod.icon.png" />
+	</ItemGroup>
+
 	<!--
 		After each build:
 		1. copy the DLL (and the asset bundle, if the Unity project has built one) into Thunderstore\plugins\TweyenR2RMod,
