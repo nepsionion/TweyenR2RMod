@@ -1,0 +1,275 @@
+<title>Tweyen Motion Index</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: sticky filter bar over a dense grid of "monitor" tiles, each a looping 8-frame strip with a to-scale timeline. */
+:root {
+  --bg: #eceef2;          /* cool bone white */
+  --panel: #f8f9fb;
+  --ink: #16181d;         /* coat leather */
+  --muted: #5b6070;
+  --line: #d3d6de;
+  --gold: #9a6a0c;        /* trim */
+  --cobalt: #2c50c2;      /* ribbon */
+  --arrow: #9a6a0c;       /* tag: has an arrow animation (same hue as trim) */
+  --screen: #282830;      /* matches the renders' backdrop */
+  --chip: #e2e5ec;
+  --display: "Saira Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111318; --panel: #1a1d24; --ink: #e8e5de; --muted: #9aa0b0; --line: #2c303a;
+    --gold: #d9a640; --cobalt: #7f9bff; --arrow: #d9a640; --screen: #282830; --chip: #252933;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111318; --panel: #1a1d24; --ink: #e8e5de; --muted: #9aa0b0; --line: #2c303a;
+  --gold: #d9a640; --cobalt: #7f9bff; --arrow: #d9a640; --screen: #282830; --chip: #252933;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1480px; margin: 0 auto; }
+
+header.top { padding-block: 28px 18px; display: grid; gap: 6px; }
+h1 { font: 700 clamp(30px, 5vw, 46px)/1 var(--display); letter-spacing: .01em; margin: 0; text-wrap: balance; }
+h1 .id { color: var(--gold); font-family: var(--mono); font-size: .52em; vertical-align: .55em; margin-left: .4em; letter-spacing: 0; }
+.lede { margin: 0; color: var(--muted); max-width: 72ch; }
+.lede b { color: var(--ink); }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel); border-block: 1px solid var(--line); }
+.bar .wrap { padding-block: 10px; display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.field { display: flex; align-items: center; gap: 6px; }
+.field label, .lbl { font: 700 11px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+input[type=search], select { font: 500 14px var(--mono); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+input[type=search] { width: 9.5em; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 13px var(--mono); border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.chip small { color: var(--muted); margin-left: 4px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip[aria-pressed="true"] small { color: inherit; opacity: .7; }
+.chip.tog[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+button:focus-visible, input:focus-visible, select:focus-visible, .tile:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+.count { margin-left: auto; font: 500 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+main.wrap { padding-block: 18px 120px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: grid; min-width: 0; }
+.card.marked { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.tile { --w: 1024px; position: relative; aspect-ratio: 128 / 168; max-width: 100%; background-color: var(--screen); background-repeat: no-repeat; cursor: ew-resize; }
+.tile.on { animation: play var(--dur) steps(var(--nf)) infinite; }
+.tile.scrub { animation: none; }
+@keyframes play { from { background-position-x: 0; } to { background-position-x: calc(-1 * var(--w)); } }
+@media (prefers-reduced-motion: reduce) { .tile.on { animation: none; } }
+.mark { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 6px; border: 0; background: rgb(0 0 0 / .45); color: #f2d48a; font: 700 17px/30px var(--body); cursor: pointer; padding: 0; }
+.mark[aria-pressed="true"] { background: #d9a640; color: #1a1406; }
+.meta { padding: 9px 10px 11px; display: grid; gap: 7px; min-width: 0; }
+.row1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.aid { font: 700 18px/1 var(--mono); letter-spacing: .02em; }
+.aid .grp { color: var(--gold); }
+.dur { font: 500 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tl { position: relative; height: 8px; border-radius: 2px; background: var(--chip); overflow: hidden; }
+
+.tl .head { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--cobalt); left: 0; }
+.mv { font: 500 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1.5em; }
+.mv b { color: var(--ink); font-weight: 700; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { font: 500 11px/1 var(--mono); padding: 3px 6px; border-radius: 4px; background: var(--chip); color: var(--muted); }
+.tag.arrow { background: var(--arrow); color: var(--panel); }
+.tag.cam { color: var(--cobalt); }
+.empty { padding: 40px 0; color: var(--muted); }
+
+.tray { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--ink); color: var(--bg); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tray .wrap { padding-block: 10px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.tray .lbl { color: var(--bg); opacity: .7; }
+.tray code { font: 500 13px var(--mono); overflow-wrap: anywhere; min-width: 0; flex: 1 1 260px; }
+.tray button { font: 700 13px var(--body); border-radius: 6px; padding: 7px 12px; border: 1px solid currentColor; background: transparent; color: var(--bg); cursor: pointer; }
+.tray button.primary { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 18px; height: 8px; border-radius: 2px; display: inline-block; }
+</style>
+
+<header class="top wrap">
+  <h1>Tweyen Motion Index <span class="id">pl2300</span></h1>
+  <p class="lede">Every body animation extracted from Granblue Fantasy Relink, played back from 8 sampled frames at its real length. The bow and arrow play their own matching animations alongside. Drag across a preview to scrub it. Root motion is removed from the previews and summarised below each one instead. <b>Mark</b> the ones you want for skills, then copy the list.</p>
+  <div class="legend">
+    <span><span class="tag arrow">arrow</span>the arrow model has a matching animation (likely a shot)</span>
+    <span><i class="sw" style="background:var(--cobalt)"></i>playhead</span>
+    <span><b style="color:var(--ink)">→</b> forward travel · <b style="color:var(--ink)">↑</b> peak height (metres)</span>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="field"><label for="q">ID</label><input id="q" type="search" placeholder="e.g. 30" autocomplete="off" spellcheck="false"></div>
+    <div class="chips" id="groups" role="group" aria-label="ID group"></div>
+    <div class="chips" role="group" aria-label="Filters">
+      <button class="chip tog" id="f-atk" aria-pressed="false">Shoots an arrow</button>
+      <button class="chip tog" id="f-move" aria-pressed="false">Travels ≥ 1 m</button>
+      <button class="chip tog" id="f-air" aria-pressed="false">Leaves ground</button>
+      <button class="chip tog" id="f-mark" aria-pressed="false">Marked</button>
+    </div>
+    <div class="field"><label for="sort">Sort</label>
+      <select id="sort"><option value="id">ID</option><option value="long">Longest</option><option value="short">Shortest</option><option value="far">Farthest travel</option></select>
+    </div>
+    <span class="count" id="count"></span>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="empty" hidden>No animation matches these filters. Clear a filter or the ID search.</p>
+</main>
+
+<div class="tray" id="tray" hidden>
+  <div class="wrap">
+    <span class="lbl">Marked</span>
+    <code id="marked"></code>
+    <button class="primary" id="copy">Copy list</button>
+    <button id="clear">Clear</button>
+  </div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const STORE = "tweyen-pl2300-marks";
+let marks = new Set();
+try { marks = new Set(JSON.parse(localStorage.getItem(STORE) || "[]")); } catch (e) {}
+const saveMarks = () => { try { localStorage.setItem(STORE, JSON.stringify([...marks])); } catch (e) {} };
+
+const $ = (s) => document.querySelector(s);
+const grid = $("#grid");
+const state = { q: "", group: null, atk: false, move: false, air: false, mark: false, sort: "id" };
+const fw = DATA.fw, fh = DATA.fh, nf = DATA.nf;
+const rowsIn = (a) => Math.min(DATA.perAtlas, DATA.anims.length - a * DATA.perAtlas);
+
+// group chips by first hex digit of the ID
+const groups = {};
+DATA.anims.forEach((a) => { const g = a.id[0]; groups[g] = (groups[g] || 0) + 1; });
+const gwrap = $("#groups");
+Object.keys(groups).sort().forEach((g) => {
+  const b = document.createElement("button");
+  b.className = "chip"; b.setAttribute("aria-pressed", "false"); b.dataset.g = g;
+  b.innerHTML = `${g}xxx<small>${groups[g]}</small>`;
+  b.addEventListener("click", () => { state.group = state.group === g ? null : g; render(); });
+  gwrap.appendChild(b);
+});
+
+const fmtM = (v) => (v >= 0 ? "" : "−") + Math.abs(v).toFixed(2);
+
+function card(a) {
+  const el = document.createElement("article");
+  el.className = "card" + (marks.has(a.id) ? " marked" : "");
+  const tile = document.createElement("div");
+  tile.className = "tile"; tile.tabIndex = 0;
+  tile.setAttribute("role", "img"); tile.setAttribute("aria-label", `Animation ${a.id}, ${a.seconds.toFixed(2)} seconds`);
+  // scale the 128px-wide frame to the tile's rendered width
+  tile.style.setProperty("--dur", Math.max(a.seconds, 0.5) + "s");
+  tile.style.setProperty("--nf", nf);
+  tile.dataset.atlas = a.atlas; tile.dataset.row = a.row;
+  const m = document.createElement("button");
+  m.className = "mark"; m.textContent = "★"; m.setAttribute("aria-pressed", marks.has(a.id)); m.setAttribute("aria-label", `Mark ${a.id}`);
+  m.addEventListener("click", (e) => {
+    e.stopPropagation();
+    marks.has(a.id) ? marks.delete(a.id) : marks.add(a.id);
+    m.setAttribute("aria-pressed", marks.has(a.id)); el.classList.toggle("marked", marks.has(a.id));
+    saveMarks(); updateTray(); if (state.mark) render();
+  });
+  tile.appendChild(m);
+
+  const meta = document.createElement("div"); meta.className = "meta";
+  const mv = a.motion;
+  let mvText = "in place";
+  if (mv && (mv.horizontal >= 0.05 || mv.peak_height >= 0.05)) {
+    const parts = [];
+    if (mv.horizontal >= 0.05) parts.push(`→ <b>${fmtM(mv.forward)}</b>${Math.abs(mv.side) >= 0.3 ? ` side ${fmtM(mv.side)}` : ""}`);
+    if (mv.peak_height >= 0.05) parts.push(`↑ <b>${mv.peak_height.toFixed(2)}</b>`);
+    if (Math.abs(mv.up) >= 0.1) parts.push(`ends ${fmtM(mv.up)} up`);
+    mvText = parts.join(" · ");
+  }
+  const tags = (a.weapons.includes("arrow") ? `<span class="tag arrow">arrow</span>` : "") +
+    a.tracks.map((t) => `<span class="tag${t === "camera" ? " cam" : ""}">${t === "se" ? "sound" : t}</span>`).join("");
+  meta.innerHTML = `
+    <div class="row1"><span class="aid"><span class="grp">${a.id[0]}</span>${a.id.slice(1)}</span><span class="dur">${a.seconds.toFixed(2)} s · ${a.frames} f</span></div>
+    <div class="tl" title="Playhead"><span class="head"></span></div>
+    <div class="mv">${mvText}</div>
+    <div class="tags">${tags}</div>`;
+  el.append(tile, meta);
+
+  const head = meta.querySelector(".head");
+  const setFrame = (f) => {
+    const w = tile.clientWidth, s = w / fw;
+    tile.style.backgroundPositionX = `${-f * w}px`;
+    head.style.left = `${(f / (nf - 1)) * 100}%`;
+  };
+  tile.addEventListener("pointermove", (e) => {
+    const r = tile.getBoundingClientRect();
+    tile.classList.add("scrub");
+    setFrame(Math.min(nf - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * nf))));
+  });
+  tile.addEventListener("pointerleave", () => { tile.classList.remove("scrub"); tile.style.backgroundPositionX = ""; head.style.left = "0"; });
+  tile.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault(); tile.classList.add("scrub");
+    const cur = Number(tile.dataset.f || 0) + (e.key === "ArrowRight" ? 1 : -1);
+    tile.dataset.f = (cur + nf) % nf; setFrame(Number(tile.dataset.f));
+  });
+  tile.addEventListener("blur", () => { tile.classList.remove("scrub"); tile.style.backgroundPositionX = ""; });
+  return el;
+}
+
+// size each tile's sprite to its rendered width (tiles stretch with the grid column)
+function sizeTile(tile) {
+  const w = tile.clientWidth; if (!w) return;
+  const s = w / fw, a = Number(tile.dataset.atlas), row = Number(tile.dataset.row);
+  tile.style.backgroundImage = `url(atlas_${String(a).padStart(2, "0")}.jpg)`;
+  tile.style.backgroundSize = `${fw * nf * s}px ${fh * rowsIn(a) * s}px`;
+  tile.style.backgroundPositionY = `${-row * fh * s}px`;
+  tile.style.setProperty("--w", `${fw * nf * s}px`);
+}
+const io = new IntersectionObserver((entries) => {
+  for (const e of entries) { if (e.isIntersecting) sizeTile(e.target); e.target.classList.toggle("on", e.isIntersecting); }
+}, { rootMargin: "200px" });
+new ResizeObserver(() => grid.querySelectorAll(".tile.on").forEach(sizeTile)).observe(grid);
+
+function render() {
+  const q = state.q.trim().toLowerCase();
+  let list = DATA.anims.filter((a) =>
+    (!q || a.id.includes(q)) && (!state.group || a.id[0] === state.group) &&
+    (!state.atk || a.weapons.includes("arrow")) && (!state.move || (a.motion && a.motion.horizontal >= 1)) &&
+    (!state.air || (a.motion && a.motion.peak_height >= 0.3)) && (!state.mark || marks.has(a.id)));
+  const key = { id: (a, b) => a.id.localeCompare(b.id), long: (a, b) => b.seconds - a.seconds, short: (a, b) => a.seconds - b.seconds,
+    far: (a, b) => ((b.motion && b.motion.horizontal) || 0) - ((a.motion && a.motion.horizontal) || 0) }[state.sort];
+  list = list.slice().sort(key);
+  io.disconnect(); grid.replaceChildren(...list.map(card));
+  grid.querySelectorAll(".tile").forEach((t) => io.observe(t));
+  $("#empty").hidden = list.length > 0;
+  $("#count").textContent = `${list.length} of ${DATA.anims.length}`;
+  gwrap.querySelectorAll(".chip").forEach((b) => b.setAttribute("aria-pressed", b.dataset.g === state.group));
+}
+function updateTray() {
+  const ids = [...marks].sort();
+  $("#tray").hidden = ids.length === 0;
+  $("#marked").textContent = ids.map((i) => "pl2300_" + i).join(", ");
+}
+$("#q").addEventListener("input", (e) => { state.q = e.target.value; render(); });
+$("#sort").addEventListener("change", (e) => { state.sort = e.target.value; render(); });
+for (const k of ["atk", "move", "air", "mark"]) {
+  const b = $("#f-" + k);
+  b.addEventListener("click", () => { state[k] = !state[k]; b.setAttribute("aria-pressed", state[k]); render(); });
+}
+$("#copy").addEventListener("click", () => {
+  const text = $("#marked").textContent, btn = $("#copy");
+  navigator.clipboard.writeText(text).then(() => { btn.textContent = "Copied"; setTimeout(() => (btn.textContent = "Copy list"), 1600); })
+    .catch(() => { const r = document.createRange(); r.selectNodeContents($("#marked")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selected, press Ctrl+C"; });
+});
+$("#clear").addEventListener("click", () => { marks.clear(); saveMarks(); updateTray(); render(); });
+render(); updateTray();
+</script>

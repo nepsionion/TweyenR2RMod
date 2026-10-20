@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<LangVersion>preview</LangVersion>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+        <RestoreAdditionalProjectSources>
+			https://api.nuget.org/v3/index.json;
+			https://nuget.bepinex.dev/v3/index.json
+		</RestoreAdditionalProjectSources>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BepInEx.Analyzers" Version="1.0.*">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+
+		<PackageReference Include="BepInEx.Core" Version="5.4.21" />
+
+		<PackageReference Include="R2API.Core" Version="5.*" />
+		<PackageReference Include="R2API.Prefab" Version="1.*" />
+		<PackageReference Include="R2API.RecalculateStats" Version="1.*" />
+		<PackageReference Include="R2API.Language" Version="1.*" />
+		<PackageReference Include="R2API.Sound" Version="1.*" />
+
+		<PackageReference Include="UnityEngine.Modules" Version="2021.3.45" IncludeAssets="compile" />
+		<PackageReference Include="RiskOfRain2.GameLibs" Version="*-*" />
+		<PackageReference Include="MMHOOK.RoR2" Version="*" NoWarn="NU1701" />
+        <PackageReference Include="RoR2BepInExPack" Version="*" />
+		<!-- Risk of Options (soft dependency; copied from the mod manager's profile, not shipped) -->
+		<Reference Include="RiskOfOptions">
+			<HintPath>libs\RiskOfOptions.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<!-- StandaloneAncientScepter (soft dependency; copied from the mod manager's profile, not shipped) -->
+		<Reference Include="AncientScepter">
+			<HintPath>libs\AncientScepter.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+
+	<!--
+		After each build:
+		1. copy the DLL (and the asset bundle, if the Unity project has built one) into Thunderstore\plugins\TweyenR2RMod,
+		   which is laid out exactly like the installed mod (DLL + AssetBundles\ + Soundbanks\);
+		2. mirror that folder into the mod manager's Testing profile so the game can be launched straight away.
+	-->
+	<PropertyGroup>
+		<ThunderstorePluginDir>$(MSBuildProjectDirectory)\..\Thunderstore\plugins\$(MSBuildProjectName)</ThunderstorePluginDir>
+		<UnityAssetBundle>$(MSBuildProjectDirectory)\..\TweyenUnityProject\AssetBundles\tweyenbundle</UnityAssetBundle>
+		<TestProfileDir>$(AppData)\Thunderstore Mod Manager\DataFolder\RiskOfRain2\profiles\Testing</TestProfileDir>
+		<TestPluginDir>$(TestProfileDir)\BepInEx\plugins\$(MSBuildProjectName)</TestPluginDir>
+	</PropertyGroup>
+
+	<Target Name="DeployMod" AfterTargets="Build">
+		<Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(ThunderstorePluginDir)" />
+		<Copy Condition="Exists('$(UnityAssetBundle)')" SourceFiles="$(UnityAssetBundle)" DestinationFolder="$(ThunderstorePluginDir)\AssetBundles" />
+		<!-- Tweyen's sound bank (Tools/soundbank/build_soundbank.py); R2API.Sound loads every .sound file -->
+		<Copy Condition="Exists('$(MSBuildProjectDirectory)\Soundbanks\TweyenSounds.sound')" SourceFiles="$(MSBuildProjectDirectory)\Soundbanks\TweyenSounds.sound" DestinationFolder="$(ThunderstorePluginDir)\Soundbanks" />
+		<ItemGroup>
+			<PluginFiles Include="$(ThunderstorePluginDir)\**\*" />
+		</ItemGroup>
+		<Copy Condition="Exists('$(TestProfileDir)')" SourceFiles="@(PluginFiles)" DestinationFiles="@(PluginFiles->'$(TestPluginDir)\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+		<Message Condition="Exists('$(TestProfileDir)')" Importance="high" Text="Deployed $(MSBuildProjectName) to $(TestPluginDir)" />
+	</Target>
+
+</Project>

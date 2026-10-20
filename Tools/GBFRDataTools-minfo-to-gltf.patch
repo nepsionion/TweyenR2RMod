@@ -1,0 +1,144 @@
+# Fixes for GBFRDataTools 2.0.0 (commit 6783d75) minfo-to-gltf: per-chunk vertex ranges, exact buffer sizing, rigid meshes without skin, shared-read file access, GBFR_GRANITE_RES=2k|4k texture folder.
+--- a/GBFRDataTools.Models/MInfoToGLTFConverter.cs	2026-10-15 21:32:34.065618700 -0500
++++ b/GBFRDataTools.Models/MInfoToGLTFConverter.cs	2026-10-15 21:32:34.108043700 -0500
+@@ -121,7 +121,11 @@
+         */
+ 
+         _gltfModel = ModelRoot.CreateModel();
+-        byte[] gltfBuffer = new byte[CalculateGLTFBufferSize(_modelInfo)];
++        // PATCH: size the buffer from the vertex ranges actually exported (the processed lods may duplicate shared verts)
++        int bufferSize = CalculateLODEntityBufferSize(_modelInfo.Lods[0], "lod0");
++        for (int i = 0; i < _modelInfo.ShadowLods.Count; i++)
++            bufferSize += CalculateLODEntityBufferSize(_modelInfo.ShadowLods[i], $"shadowlod{i}");
++        byte[] gltfBuffer = new byte[bufferSize];
+         _gltfBuffer = _gltfModel.UseBuffer(gltfBuffer);
+         _gltfScene = _gltfModel.UseScene(0);
+ 
+@@ -165,24 +169,25 @@
+     {
+         string lodMeshPath = Path.Combine(_extractedDir, "model_streaming", meshName, $"{_modelName}.mmesh");
+ 
+-        using FileStream lodMeshStream = File.Open(lodMeshPath, FileMode.Open);
++        using FileStream lodMeshStream = File.Open(lodMeshPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+         using BinaryStream lodMeshBinaryStream = new BinaryStream(lodMeshStream);
+ 
+         // Go through each sub mesh (each sub mesh 'chunk' uses a different material)
+-        int vertStart = 0;
++        // PATCH: chunks may share/overlap vertex ranges or be out of order, so use each chunk's own [min, max] index range
++        List<(int Min, int Max)> chunkRanges = ScanChunkRanges(lod, meshName);
+ 
+         for (int i = 0; i < lod.Chunks.Count; i++)
+         {
+             Node node = _gltfScene.CreateNode();
+-            
++
+             LODChunk chunk = lod.Chunks[i];
+             MeshInfo meshInfo = _modelInfo.Meshes[chunk.MeshId];
+ 
+             Mesh gltfMesh = _gltfModel.CreateMesh($"{meshName}.{meshInfo.Name}.{i}");
+             MeshPrimitive primitive = gltfMesh.CreatePrimitive();
+ 
+-            lodMeshBinaryStream.Position = (int)lod.Buffers[^1].Offset; // Last is indices
+-            int numVerts = GetNumUsedVerts(lodMeshBinaryStream, chunk.Offset, chunk.Count, vertStart); // Find out how many verts are used by finding the highest index in the indices stream
++            int vertStart = chunkRanges[i].Min;
++            int numVerts = chunkRanges[i].Max - chunkRanges[i].Min + 1;
+ 
+             int idx = 0;
+             for (int type = 0; type <= 6; type++)
+@@ -225,8 +230,6 @@
+             lodMeshBinaryStream.Position = (int)indicesLocator.Offset;
+             CreateIndexAccessor(lodMeshBinaryStream, _bufBinaryStream, primitive, chunk.Offset, chunk.Count, vertStart);
+ 
+-            vertStart += numVerts;
+-
+             // Process mat
+             MaterialInfo matInfo = _modelInfo.Materials[chunk.MaterialId];
+             FlatBuffers.Material mat = _modelMatSet.Materials[chunk.MaterialId];
+@@ -318,7 +321,7 @@
+             primitive.Material = gltfMaterial;
+ 
+             node.WithMesh(gltfMesh);
+-            if (_skeleton is not null)
++            if (_skeleton is not null && primitive.GetVertexAccessor("JOINTS_0") is not null) // PATCH: rigid meshes (no blend data) cannot be skinned
+                 node.WithSkin(_skin);
+         }        
+     }
+@@ -551,6 +554,67 @@
+     }
+ 
+     /// <summary>
++    /// PATCH: finds the [min, max] vertex index used by each chunk of a lod.
++    /// </summary>
++    private List<(int Min, int Max)> ScanChunkRanges(StreamLOD lod, string meshName)
++    {
++        string lodMeshPath = Path.Combine(_extractedDir, "model_streaming", meshName, $"{_modelName}.mmesh");
++        using FileStream lodMeshStream = File.Open(lodMeshPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
++        using BinaryStream lodMeshBinaryStream = new BinaryStream(lodMeshStream);
++
++        var ranges = new List<(int Min, int Max)>(lod.Chunks.Count);
++        foreach (LODChunk chunk in lod.Chunks)
++        {
++            lodMeshBinaryStream.Position = (int)lod.Buffers[^1].Offset + chunk.Offset * sizeof(int); // Last is indices
++            int min = int.MaxValue, max = int.MinValue;
++            for (int i = 0; i < chunk.Count; i++)
++            {
++                int index = lodMeshBinaryStream.ReadInt32();
++                min = Math.Min(min, index);
++                max = Math.Max(max, index);
++            }
++
++            if (chunk.Count == 0)
++                (min, max) = (0, -1);
++
++            ranges.Add((min, max));
++        }
++
++        return ranges;
++    }
++
++    /// <summary>
++    /// PATCH: exact glTF buffer size needed for one lod entity, as written by HandleLODEntity.
++    /// </summary>
++    private int CalculateLODEntityBufferSize(StreamLOD lod, string meshName)
++    {
++        int numVerts = 0, numIndices = 0;
++        var ranges = ScanChunkRanges(lod, meshName);
++        for (int i = 0; i < ranges.Count; i++)
++        {
++            numVerts += ranges[i].Max - ranges[i].Min + 1;
++            numIndices += lod.Chunks[i].Count;
++        }
++
++        int perVertex = 0;
++        for (int type = 0; type <= 6; type++)
++        {
++            VertexBufferType checkType = (VertexBufferType)(1 << type);
++            if (!lod.BufferTypes.HasFlag(checkType))
++                continue;
++
++            perVertex += checkType switch
++            {
++                VertexBufferType.POS_NOR_TAN_UV0 => 0x30,
++                VertexBufferType.COLOR => 0x04,
++                _ => 0x08, // blend indices/weights
++            };
++        }
++
++        return (numVerts * perVertex) + (numIndices * sizeof(int));
++    }
++
++    /// <summary>
+     /// Calculates the size of the mesh/vertex/index buffer for the glTF file.
+     /// </summary>
+     /// <param name="info"></param>
+@@ -597,7 +661,9 @@
+ 
+     private string GetGraniteDir(int tileSetNumber)
+     {
+-        return Path.Combine(_extractedDir, "granite", "4k", "gts", tileSetNumber.ToString());
++        // PATCH: texture resolution folder ("2k" or "4k") selectable through GBFR_GRANITE_RES
++        string res = Environment.GetEnvironmentVariable("GBFR_GRANITE_RES") ?? "4k";
++        return Path.Combine(_extractedDir, "granite", res, "gts", tileSetNumber.ToString());
+     }
+ 
+     private GraniteProcessor? GetGraniteTileSetProcessor(int tileSetNumber, MInfoToGLTFConverterOptions options)
