@@ -1,7 +1,7 @@
 {
 	"name": "TweyenR2RMod",
 	"version_number": "1.0.0",
-	"website_url": "",
+	"website_url": "https://github.com/nespionion/TweyenR2RMod",
 	"description": "Adds the survivor Tweyen to Risk of Rain 2.",
 	"dependencies": [
 		"bbepis-BepInExPack-5.4.2122",
