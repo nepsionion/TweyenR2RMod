@@ -2,7 +2,7 @@
 
 A Risk of Rain 2 survivor mod (Tweyen from Granblue Fantasy), built on the [Henry survivor template](https://github.com/ArcPh1r3/HenryTutorial) ([template wiki](https://github.com/ArcPh1r3/HenryTutorial/wiki)).
 
-Download the mod from Thunderstore. Suggestions and bug reports are welcome in this repository's [Issues](https://github.com/nespionion/TweyenR2RMod/issues).
+Download the mod from Thunderstore. Suggestions and bug reports are welcome in this repository's [Issues](https://github.com/nepsionion/TweyenR2RMod/issues).
 
 This repository holds the source only: the files extracted from Granblue Fantasy Relink (`GBFRExtract/`, `TweyenUnityProject/TweyenSource/`, the generated `TweyenUnityProject/Assets/TweyenAssets/`), the sounds, the built asset bundle and sound bank, third-party tools (`GBFRDataTools/`, `Tools/vgmstream/`) and other mods' DLLs (`TweyenR2RMod/libs/`: Risk of Options, StandaloneAncientScepter) are not included.
 

@@ -1,6 +1,6 @@
 # Tweyen, Eternal of the Grand Blue Skies
 
-[![GitHub Suggestions / Issues](https://raw.githubusercontent.com/nespionion/TweyenR2RMod/main/Art/Readme/github_issues.png)](https://github.com/nespionion/TweyenR2RMod/issues)
+[![GitHub Suggestions / Issues](https://raw.githubusercontent.com/nepsionion/TweyenR2RMod/main/Art/Readme/github_issues.png)](https://github.com/nepsionion/TweyenR2RMod/issues)
 
 Tweyen, or Song (see config), is the second Eternal and master of the bow from Granblue Fantasy. She is a ranged hunter who has two gameplay styles, one for each of her passives.
 
@@ -40,7 +40,7 @@ Her other passive, **Peerless Eye**, accumulates a buff that gives increasingly 
 
 *The mod is 100% free, so don't expect any extra content here.*
 
-- [GitHub](https://github.com/nespionion/TweyenR2RMod) for suggestions and bug reports
+- [GitHub](https://github.com/nepsionion/TweyenR2RMod) for suggestions and bug reports
 - [Patreon](https://patreon.com/nepsionion) for those who wish to support me
 - [Ko-fi](https://ko-fi.com/nepsionion) for those who wish to support me
 
