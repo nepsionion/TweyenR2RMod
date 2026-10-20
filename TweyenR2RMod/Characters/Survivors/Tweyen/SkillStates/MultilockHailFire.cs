@@ -27,7 +27,7 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
         /// <summary>Launch angles: up from the horizontal, and to either side of where she faces (90 = her side).</summary>
         public static float minLaunchPitch = 10f;
         public static float maxLaunchPitch = 40f;
-        public static float maxLaunchYaw = 80f;
+        public static float maxLaunchYaw = 40f;
 
         private const string Layer = "FullBody, Override";
         private const string Muzzle = "ArrowTip";

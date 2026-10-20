@@ -18,6 +18,15 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
         public static float baseDuration = 1f; // one arrow per second at base attack speed
         /// <summary>The arrow leaves at this fraction of the shot's duration (end of the draw animation).</summary>
         public static float fireFraction = 0.35f;
+        /// <summary>
+        /// Where the arrow leaves, from her aim origin along the aim (m): ahead, up and to her left. A fixed point
+        /// rather than the drawn arrow's tip, which isn't where it should be at high attack speed (the sped-up draw
+        /// is already past its end, lowering the bow, when the shot fires). Placed where the tip is at base attack
+        /// speed aiming level (measured in game: 1.85 m ahead, 0.05 m to her right).
+        /// </summary>
+        public static float muzzleForward = 1.85f;
+        public static float muzzleUp = 0f;
+        public static float muzzleLeft = -0.05f;
 
         private const string Layer = "FullBody, Override";
         private const string ShootState = "StellarArrow";
@@ -83,18 +92,19 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
             if (!isAuthority) return;
 
             Ray aimRay = GetAimRay();
-            Vector3 origin = aimRay.origin;
-            Vector3 direction = aimRay.direction;
-            Transform tip = FindModelChild("ArrowTip");
-            if (tip)
-            {
-                // leave from the drawn arrow's tip, aimed at whatever the crosshair points at
-                Vector3 target = Util.CharacterRaycast(gameObject, aimRay, out RaycastHit hit, MaxAimDistance, LayerIndex.CommonMasks.bullet, QueryTriggerInteraction.Ignore)
-                    ? hit.point
-                    : aimRay.GetPoint(MaxAimDistance);
-                origin = tip.position;
-                direction = (target - origin).normalized;
-            }
+            // leave from a fixed point by the bow, aimed at whatever the crosshair points at
+            Vector3 forward = aimRay.direction;
+            Vector3 left = Vector3.Cross(forward, Vector3.up);
+            if (left.sqrMagnitude < 0.0001f) left = -transform.right;
+            left.Normalize();
+            Vector3 up = Vector3.Cross(left, forward);
+            Vector3 origin = aimRay.origin + forward * muzzleForward + up * muzzleUp + left * muzzleLeft;
+            Vector3 target = Util.CharacterRaycast(gameObject, aimRay, out RaycastHit hit, MaxAimDistance, LayerIndex.CommonMasks.bullet, QueryTriggerInteraction.Ignore)
+                ? hit.point
+                : aimRay.GetPoint(MaxAimDistance);
+            Vector3 toTarget = target - origin;
+            // a target closer than the launch point (point blank): straight along the aim instead of backwards
+            Vector3 direction = Vector3.Dot(toTarget, forward) > 0.1f ? toTarget.normalized : forward;
 
             ProjectileManager.instance.FireProjectile(new FireProjectileInfo
             {
