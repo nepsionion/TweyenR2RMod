@@ -4,7 +4,7 @@ using RoR2.Achievements;
 namespace TweyenR2RMod.Survivors.Tweyen
 {
     /// <summary>
-    /// TEMP diagnostics for Tweyen's achievements (lines tagged [TweyenAch] in the BepInEx log): an achievement whose
+    /// TEMP diagnostics (switched off: the calls are commented out, uncomment them to test again) for Tweyen's achievements (lines tagged [TweyenAch] in the BepInEx log): an achievement whose
     /// unlockable is missing, when each starts/stops watching (on the player's game and on the host), when it is
     /// granted, and (from the achievements themselves, via <see cref="Write"/>) what their checks see. The game only
     /// runs an achievement's checks while it is still locked, so earned ones stay quiet.

@@ -113,7 +113,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
                 Save(user.userProfile, hunted);
                 if (!user.userProfile.HasAchievement(TweyenUnlocks.HUNTRESS_ACHIEVEMENT))
                 {
-                    TweyenAchievementLog.Write($"Dark Huntress: hunted {monster.log} ({name})"); // TEMP
+                    // TweyenAchievementLog.Write($"Dark Huntress: hunted {monster.log} ({name})"); // TEMP
                 }
                 onProgress?.Invoke(user.userProfile);
             }

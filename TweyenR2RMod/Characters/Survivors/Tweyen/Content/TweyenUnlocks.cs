@@ -112,7 +112,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
             icarus.requiredExpansion = Addressables.LoadAssetAsync<ExpansionDef>(GameAssetPaths.RoR2_DLC2_Common.DLC2_asset).WaitForCompletion();   // False Son
             voided.requiredExpansion = Addressables.LoadAssetAsync<ExpansionDef>(GameAssetPaths.RoR2_DLC1_Common.DLC1_asset).WaitForCompletion();   // Voidling
             TweyenHunt.Init();
-            TweyenAchievementLog.Init(); // TEMP
+            // TweyenAchievementLog.Init(); // TEMP
         }
 
         /// <summary>The achievement that unlocks bow <paramref name="index"/> (1 = the default, in the loadout's order; null: always available).</summary>
@@ -167,7 +167,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
         private void LogGameOver(Run run, RunReport report)
         {
             DifficultyDef difficulty = DifficultyCatalog.GetDifficultyDef(report.ruleBook.FindDifficulty());
-            TweyenAchievementLog.Write($"Mastery: run over, ending {(report.gameEnding ? report.gameEnding.cachedName : "none")}, win {(report.gameEnding && report.gameEnding.isWin)}, difficulty {difficulty?.nameToken} (Monsoon or harder: {difficulty != null && difficulty.countsAsHardMode})");
+            // TweyenAchievementLog.Write($"Mastery: run over, ending {(report.gameEnding ? report.gameEnding.cachedName : "none")}, win {(report.gameEnding && report.gameEnding.isWin)}, difficulty {difficulty?.nameToken} (Monsoon or harder: {difficulty != null && difficulty.countsAsHardMode})");
         }
     }
 
@@ -230,7 +230,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
         {
             if (!victims.Contains(report.victimBodyIndex)) return;
             bool killer = report.attackerMaster && report.attackerMaster == serverAchievementTracker.networkUser.master;
-            TweyenAchievementLog.Write($"{GetType().DeclaringType?.Name}: {BodyCatalog.GetBodyName(report.victimBodyIndex)} died, Monsoon or harder {TweyenUnlocks.HardMode()} (needed {NeedsHardMode}), killed by this player {killer} (needed {MustBeKiller})");
+            // TweyenAchievementLog.Write($"{GetType().DeclaringType?.Name}: {BodyCatalog.GetBodyName(report.victimBodyIndex)} died, Monsoon or harder {TweyenUnlocks.HardMode()} (needed {NeedsHardMode}), killed by this player {killer} (needed {MustBeKiller})");
             if (NeedsHardMode && !TweyenUnlocks.HardMode()) return;
             if (MustBeKiller && !killer) return;
             Grant();
@@ -283,7 +283,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
 
             private void OnFalseSonDeath()
             {
-                TweyenAchievementLog.Write($"Icarus: False Son defeated, Monsoon or harder {TweyenUnlocks.HardMode()}");
+                // TweyenAchievementLog.Write($"Icarus: False Son defeated, Monsoon or harder {TweyenUnlocks.HardMode()}");
                 if (TweyenUnlocks.HardMode()) Grant();
             }
         }
@@ -316,7 +316,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
 
         private void Check()
         {
-            TweyenAchievementLog.Write("Dark Huntress: still to hunt: " + string.Join(", ", TweyenHunt.Missing(localUser)));
+            // TweyenAchievementLog.Write("Dark Huntress: still to hunt: " + string.Join(", ", TweyenHunt.Missing(localUser)));
             if (TweyenHunt.Complete(localUser)) Grant();
         }
     }
@@ -363,7 +363,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
         private void OnGameOver(Run run, RunReport report)
         {
             DifficultyDef difficulty = DifficultyCatalog.GetDifficultyDef(report.ruleBook.FindDifficulty());
-            TweyenAchievementLog.Write($"Voided: run over, ending {(report.gameEnding ? report.gameEnding.cachedName : "none")} (Void ending {report.gameEnding == DLC1Content.GameEndings.VoidEnding}), Monsoon or harder {difficulty != null && difficulty.countsAsHardMode}");
+            // TweyenAchievementLog.Write($"Voided: run over, ending {(report.gameEnding ? report.gameEnding.cachedName : "none")} (Void ending {report.gameEnding == DLC1Content.GameEndings.VoidEnding}), Monsoon or harder {difficulty != null && difficulty.countsAsHardMode}");
             if (report.gameEnding != DLC1Content.GameEndings.VoidEnding) return;
             if (difficulty != null && difficulty.countsAsHardMode) Grant();
         }
@@ -403,7 +403,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
                 bool available = RoR2.EntitlementManagement.EntitlementManager.localUserEntitlementTracker.UserHasEntitlementForUnlockable(localUser, skin);
                 if (available && !userProfile.HasUnlockable(skin)) missing.Add(skin.cachedName);
             }
-            TweyenAchievementLog.Write("Transcendence: skins still locked: " + (missing.Count == 0 ? "none" : string.Join(", ", missing)));
+            // TweyenAchievementLog.Write("Transcendence: skins still locked: " + (missing.Count == 0 ? "none" : string.Join(", ", missing)));
             if (missing.Count == 0) Grant();
         }
     }
@@ -432,7 +432,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
             private void OnCastHits(GameObject owner, int hits)
             {
                 CharacterBody body = owner ? owner.GetComponent<CharacterBody>() : null;
-                if (hits >= 5) TweyenAchievementLog.Write($"Sagacity: {hits} arrows of one Multilock Hail on one enemy (this player's: {body && body.master == serverAchievementTracker.networkUser.master})");
+                // if (hits >= 5) TweyenAchievementLog.Write($"Sagacity: {hits} arrows of one Multilock Hail on one enemy (this player's: {body && body.master == serverAchievementTracker.networkUser.master})");
                 if (hits < TweyenUnlocks.SAGACITY_HITS) return;
                 if (body && body.master && body.master == serverAchievementTracker.networkUser.master) Grant();
             }
@@ -478,7 +478,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
             if (items / 10 != loggedTens)
             {
                 loggedTens = items / 10;
-                TweyenAchievementLog.Write($"Exalted Wings: {items} items");
+                // TweyenAchievementLog.Write($"Exalted Wings: {items} items");
             }
             if (items >= TweyenUnlocks.EXALTED_ITEMS) Grant();
         }
@@ -514,7 +514,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
                 if (mine && debuffs > mostDebuffs)
                 {
                     mostDebuffs = debuffs;
-                    TweyenAchievementLog.Write($"Repudiator: new highest debuff count {debuffs} on {BodyCatalog.GetBodyName(victim.bodyIndex)}");
+                    // TweyenAchievementLog.Write($"Repudiator: new highest debuff count {debuffs} on {BodyCatalog.GetBodyName(victim.bodyIndex)}");
                 }
                 if (debuffs >= TweyenUnlocks.REPUDIATOR_DEBUFFS && mine) Grant();
             }
