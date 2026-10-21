@@ -100,7 +100,7 @@ namespace TweyenR2RMod.Survivors.Tweyen
             if (!body || !body.healthComponent || body.healthComponent.alive) return;
             if (body.teamComponent && body.teamComponent.teamIndex == TeamIndex.Player) return;
             string name = BodyCatalog.GetBodyName(body.bodyIndex);
-            Monster monster = string.IsNullOrEmpty(name) ? null : Monsters.FirstOrDefault(m => m.bodies.Any(b => b.name == name));
+            Monster monster = string.IsNullOrEmpty(name) ? null : Monsters.FirstOrDefault(m => m.bodies.Any(b => b && b.name == name));
             if (monster == null) return;
 
             BodyIndex tweyen = BodyCatalog.FindBodyIndex(TweyenSurvivor.instance.bodyName);

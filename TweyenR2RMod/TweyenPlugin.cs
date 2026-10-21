@@ -31,7 +31,7 @@ namespace TweyenR2RMod
         //   this shouldn't even have to be said
         public const string MODUID = "nepsionion.TweyenR2RMod";
         public const string MODNAME = "TweyenR2RMod";
-        public const string MODVERSION = "1.0.3";
+        public const string MODVERSION = "1.0.4";
 
         // a prefix for name tokens to prevent conflicts- please capitalize all name tokens for convention
         public const string DEVELOPER_PREFIX = "NEPSIONION";

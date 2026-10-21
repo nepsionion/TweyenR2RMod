@@ -56,6 +56,8 @@ namespace TweyenR2RMod.Survivors.Tweyen.Projectiles
             impactEffect = Addressables.LoadAssetAsync<GameObject>(GameAssetPaths.RoR2_Base_Huntress.OmniImpactVFXHuntress_prefab).WaitForCompletion();
 
             basicArrow = Create<BasicArrowImpact>("TweyenBasicArrow");
+            // Stellar Arrow fires it at the enemy under the crosshair, if any: it homes in on that one
+            basicArrow.AddComponent<ProjectileKeepFiredTarget>();
             wheelArrow = Create<WheelOfDeathArrowImpact>("TweyenWheelArrow", WHEEL_HOMING);
             valiantArrow = Create<BasicArrowImpact>("TweyenValiantArrow");
             foreach (ProjectileSteerTowardTarget steer in valiantArrow.GetComponents<ProjectileSteerTowardTarget>()) Object.DestroyImmediate(steer);

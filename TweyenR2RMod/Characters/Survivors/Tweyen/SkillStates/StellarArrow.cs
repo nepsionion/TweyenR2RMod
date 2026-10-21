@@ -99,9 +99,11 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
             left.Normalize();
             Vector3 up = Vector3.Cross(left, forward);
             Vector3 origin = aimRay.origin + forward * muzzleForward + up * muzzleUp + left * muzzleLeft;
-            Vector3 target = Util.CharacterRaycast(gameObject, aimRay, out RaycastHit hit, MaxAimDistance, LayerIndex.CommonMasks.bullet, QueryTriggerInteraction.Ignore)
-                ? hit.point
-                : aimRay.GetPoint(MaxAimDistance);
+            bool aimHit = Util.CharacterRaycast(gameObject, aimRay, out RaycastHit hit, MaxAimDistance, LayerIndex.CommonMasks.bullet, QueryTriggerInteraction.Ignore);
+            Vector3 target = aimHit ? hit.point : aimRay.GetPoint(MaxAimDistance);
+            // the crosshair on an enemy: the arrow homes in on it (on the part aimed at), not on what it finds itself
+            HurtBox aimedEnemy = aimHit ? hit.collider.GetComponent<HurtBox>() : null;
+            if (aimedEnemy && (aimedEnemy.teamIndex == GetTeam() || !aimedEnemy.healthComponent || !aimedEnemy.healthComponent.alive)) aimedEnemy = null;
             Vector3 toTarget = target - origin;
             // a target closer than the launch point (point blank): straight along the aim instead of backwards
             Vector3 direction = Vector3.Dot(toTarget, forward) > 0.1f ? toTarget.normalized : forward;
@@ -112,6 +114,7 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
                 position = origin,
                 rotation = Util.QuaternionSafeLookRotation(direction),
                 owner = gameObject,
+                target = aimedEnemy ? aimedEnemy.gameObject : null,
                 damage = damageCoefficient * damageStat,
                 crit = RollCrit(),
                 force = 0f,

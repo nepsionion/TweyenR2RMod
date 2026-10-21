@@ -72,6 +72,11 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
         private const string Layer = "FullBody, Override";
         private const string State = "TwoCrownStrife";
         private const string BowCentre = "ArrowTip";
+        /// <summary>
+        /// The bow's height at the shot, below her body's when the first arrow appears (m; measured in game: 0.40 to
+        /// 0.45, the bow 0.26 below her body at the shot).
+        /// </summary>
+        private const float RingBelowBody = 0.43f;
 
         /// <summary>The charges the skill had when used (all spent together; set by OncePerStageSkillDef, sent to every client).</summary>
         public int charges = 1;
@@ -88,6 +93,8 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
         private bool couldBeHitStunned, couldBeStunned, couldBeFrozen;
         private readonly List<GameObject> drawnArrows = new List<GameObject>();
         private bool drawSoundPlayed;
+        /// <summary>The ring's height, fixed when the first arrow appears (see <see cref="CircleCentre"/>).</summary>
+        private float? ringHeight;
 
         public bool BlocksPrimary => true;
 
@@ -224,13 +231,14 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
             }
             // the arrows appear one by one while she draws
             int shown = Mathf.Min(arrowCount, Mathf.CeilToInt(arrowCount * Mathf.Clamp01((age - drawStart) / (fireTime - drawStart))));
+            Ray aim = GetAimRay();
             while (drawnArrows.Count < shown)
             {
-                GameObject arrow = MakeDrawnArrow();
+                // made where it belongs (made elsewhere and moved, its trails would streak in from there)
+                GameObject arrow = MakeDrawnArrow(CirclePoint(drawnArrows.Count, aim.direction, age), Util.QuaternionSafeLookRotation(aim.direction));
                 if (!arrow) break;
                 drawnArrows.Add(arrow);
             }
-            Ray aim = GetAimRay();
             for (int i = 0; i < drawnArrows.Count; i++)
             {
                 if (!drawnArrows[i]) continue;
@@ -238,10 +246,18 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
             }
         }
 
+        /// <summary>
+        /// The bow (following it forward and back), at the height it will have at the shot: while she draws, the bow
+        /// comes down from above her head (3.7 m) and she rises and sinks, and arrows following it would seem to float
+        /// down. They stay level where the bow ends up, <see cref="RingBelowBody"/> below her body when the first appears.
+        /// </summary>
         private Vector3 CircleCentre()
         {
             Transform centre = FindModelChild(BowCentre);
-            return centre ? centre.position : characterBody.corePosition;
+            Vector3 position = centre ? centre.position : characterBody.corePosition;
+            if (ringHeight == null) ringHeight = transform.position.y - RingBelowBody;
+            position.y = ringHeight.Value;
+            return position;
         }
 
         /// <summary>
@@ -265,11 +281,11 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
             return c + (right * Mathf.Cos(a) + up * Mathf.Sin(a)) * radius;
         }
 
-        private static GameObject MakeDrawnArrow()
+        private static GameObject MakeDrawnArrow(Vector3 position, Quaternion rotation)
         {
             GameObject look = TweyenArrows.Ghost;
             if (!look) return null;
-            GameObject arrow = Object.Instantiate(look);
+            GameObject arrow = Object.Instantiate(look, position, rotation);
             foreach (RoR2.Projectile.ProjectileGhostController ghost in arrow.GetComponentsInChildren<RoR2.Projectile.ProjectileGhostController>(true)) Object.Destroy(ghost);
             foreach (Light light in arrow.GetComponentsInChildren<Light>(true)) light.enabled = false; // 20+ lights at once: too many
             return arrow;

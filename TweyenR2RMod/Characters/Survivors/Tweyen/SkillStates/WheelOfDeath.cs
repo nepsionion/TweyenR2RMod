@@ -12,8 +12,9 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
     /// 720 degree spin firing arrows all around her, 10 per rotation (20 in total, 80% damage each, light homing).
     /// Unlike Relink's version she also dashes forward (20 m at her base speed, over 0.8 s,
     /// scaling with movement speed), but:
-    /// - the dash is fast but not instant (decelerates over <see cref="dashDuration"/>), horizontal only,
-    ///   and gravity still applies;
+    /// - the dash is fast but not instant (decelerates over <see cref="dashDuration"/> down to her sprinting speed,
+    ///   which it keeps to the end and leaves her with: she comes out of it running), horizontal only, and gravity
+    ///   still applies;
     /// - no invincibility;
     /// - no fall damage during the skill and for <see cref="fallDamageImmunityAfter"/> s after.
     /// Each arrow leaves in the direction she faces at that moment of the animation (exported spin events), slightly upwards.
@@ -51,6 +52,7 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
         private int nextEvent;
         private Vector3 dashDirection;
         private float dashStartSpeed;
+        private float dashEndSpeed;
         private TweyenFallDamageShield fallShield;
         private float lastShotSound = float.NegativeInfinity;
 
@@ -74,9 +76,11 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
             dashDirection.Normalize();
             if (characterDirection) characterDirection.forward = dashDirection;
 
-            // linear deceleration: distance = startSpeed * dashDuration / 2
+            // linear deceleration down to her sprinting speed: distance = (startSpeed + endSpeed) * dashDuration / 2
             float distance = moveSpeedStat * distancePerMoveSpeed;
-            dashStartSpeed = 2f * distance / dashDuration;
+            float walkSpeed = characterBody.isSprinting ? moveSpeedStat / characterBody.sprintingSpeedMultiplier : moveSpeedStat;
+            dashEndSpeed = walkSpeed * characterBody.sprintingSpeedMultiplier;
+            dashStartSpeed = Mathf.Max(dashEndSpeed, 2f * distance / dashDuration - dashEndSpeed);
 
             // a Stellar Arrow still being drawn would fight the spin for the full-body animation: cancel it
             if (isAuthority)
@@ -110,10 +114,10 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
                 return;
             }
 
-            if (isAuthority && characterMotor && fixedAge < dashDuration)
+            if (isAuthority && characterMotor)
             {
                 // horizontal displacement only: gravity keeps acting on the motor's velocity. Being displacement,
-                // the dash leaves no momentum behind when another skill interrupts it.
+                // the dash leaves no momentum behind when another skill interrupts it (see EndIntoRun).
                 characterMotor.rootMotion += dashDirection * (CurrentDashSpeed() * GetDeltaTime());
             }
             if (characterDirection) characterDirection.forward = dashDirection;
@@ -134,15 +138,31 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
                     FireArrow(events[nextEvent].yaw);
                     nextEvent++;
                 }
-                if (characterBody) characterBody.isSprinting = true;
-                outer.SetNextStateToMain();
+                EndIntoRun();
                 return;
             }
 
             if (isAuthority && fixedAge >= duration)
             {
-                outer.SetNextStateToMain();
+                EndIntoRun();
             }
+        }
+
+        /// <summary>
+        /// Authority: ends the skill with her running: sprinting, at the dash's last speed (her sprinting speed) as
+        /// real momentum, which the game then turns toward her input like any run (or slows to a stop with none),
+        /// instead of the dash stopping dead.
+        /// </summary>
+        private void EndIntoRun()
+        {
+            if (characterMotor)
+            {
+                Vector3 velocity = dashDirection * CurrentDashSpeed();
+                velocity.y = characterMotor.velocity.y;
+                characterMotor.velocity = velocity;
+            }
+            if (characterBody) characterBody.isSprinting = true;
+            outer.SetNextStateToMain();
         }
 
         private bool WantsToSprint()
@@ -152,7 +172,7 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
 
         private float CurrentDashSpeed()
         {
-            return fixedAge < dashDuration ? dashStartSpeed * (1f - fixedAge / dashDuration) : 0f;
+            return Mathf.Lerp(dashStartSpeed, dashEndSpeed, fixedAge / dashDuration);
         }
 
         /// <summary>

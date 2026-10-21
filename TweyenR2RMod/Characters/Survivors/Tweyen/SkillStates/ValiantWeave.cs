@@ -10,11 +10,11 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
     /// Valiant Weave (utility): Relink's forward dash shot (the strong attack after a light one, motion 310b, its dash
     /// only, sped up to <see cref="animationDuration"/>). She dashes where she aims (flattened) at a steady speed
     /// for <see cref="dashDuration"/>, covering the ground distance of the Commando's Tactical Slide (scaled by her
-    /// movement speed); in the air it is an air-dash: no hop, no gravity while she dashes, the same distance. Moved by
-    /// displacement, so nothing carries over. She fires one arrow straight along the dash:
-    /// 100% damage, no homing, flat, stopped by the first enemy (and by terrain).
+    /// movement speed); in the air it is an air-dash: no hop, no gravity while she dashes, the same distance. She
+    /// fires one arrow straight along the dash: 100% damage, no homing, flat, stopped by the first enemy (and by terrain).
+    /// - Ending in the air, she keeps the dash's speed (<see cref="CarryMomentum"/>): she goes on forward as she falls.
     /// - Until she stops, only skills other than the primary can cut it short (and the primary can't be used), or a
-    ///   jump, which keeps the dash's current speed.
+    ///   jump, which keeps the dash's speed the same way (like jumping out of the Commando's Tactical Slide).
     /// - She is sprinting when it ends, as after a Tactical Slide.
     /// </summary>
     public class ValiantWeave : BaseSkillState, IBlocksPrimary
@@ -85,7 +85,11 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
             if (characterDirection) characterDirection.forward = dashDirection;
 
             if (!hasFired && fixedAge >= fireTime) Fire();
-            if (isAuthority && fixedAge >= dashDuration) outer.SetNextStateToMain();
+            if (isAuthority && fixedAge >= dashDuration)
+            {
+                if (characterMotor && !characterMotor.isGrounded) CarryMomentum(0f);
+                outer.SetNextStateToMain();
+            }
         }
 
         private float CurrentSpeed()
@@ -94,7 +98,21 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
         }
 
         /// <summary>
-        /// A jump ends the dash and keeps its momentum: a normal jump carrying the dash's current speed and direction.
+        /// Authority: the dash's speed becomes her velocity (it moves her by displacement, which stops with it), with
+        /// <paramref name="verticalSpeed"/> upwards. Air control would bleed it off within a second (towards her input,
+        /// or to a stop with none), so it is off until she lands or hits something, as after Acrid's Leap; a
+        /// double jump still redirects her.
+        /// </summary>
+        private void CarryMomentum(float verticalSpeed)
+        {
+            Vector3 velocity = dashDirection * CurrentSpeed();
+            velocity.y = verticalSpeed;
+            characterMotor.velocity = velocity;
+            characterMotor.disableAirControlUntilCollision = true;
+        }
+
+        /// <summary>
+        /// A jump ends the dash and keeps its momentum: a normal jump carrying the dash's speed and direction.
         /// (The game's own jump would replace her horizontal speed with her input, so the jump is done here.)
         /// </summary>
         private bool TryJumpCancel()
@@ -104,10 +122,8 @@ namespace TweyenR2RMod.Survivors.Tweyen.SkillStates
             if (characterMotor.jumpCount >= characterBody.maxJumpCount) return false;
 
             inputBank.jump.hasPressBeenClaimed = true;
-            Vector3 velocity = dashDirection * CurrentSpeed();
-            velocity.y = characterBody.jumpPower * characterMotor.jumpPowerPenaltyCoefficient;
-            characterMotor.velocity = velocity;
             characterMotor.Motor.ForceUnground();
+            CarryMomentum(characterBody.jumpPower * characterMotor.jumpPowerPenaltyCoefficient);
             characterMotor.jumpCount++;
             characterBody.TriggerJumpEventGlobally();
             if (sfxLocator && !string.IsNullOrEmpty(sfxLocator.jumpSound)) Util.PlaySound(sfxLocator.jumpSound, gameObject);

@@ -25,10 +25,15 @@ namespace TweyenR2RMod.Survivors.Tweyen
         public const int ARROWS_PER_EXTRA_CHARGE = 5;
         public const float DAMAGE_COEFFICIENT = 0.3f;
         public const float PROC_COEFFICIENT = 1f;
-        /// <summary>Per Ultrasight stack: +10% of the arrows' damage (multiplied in, 10 stacks = double).</summary>
-        public const float DAMAGE_PER_ULTRASIGHT = 0.1f;
+        /// <summary>Per Ultrasight stack: +25% of the arrows' damage (multiplied in, 10 stacks = 3.5x).</summary>
+        public const float DAMAGE_PER_ULTRASIGHT = 0.25f;
         /// <summary>The arrows fly where they were fired (upwards) this long (s) before homing in.</summary>
         public const float HOMING_DELAY = 0.25f;
+        /// <summary>
+        /// Terrain this close (m) ahead ends that early, so they turn before reaching it (at 144 m/s and 1080 deg/s
+        /// a quarter turn takes about 12 m). Multilock Hail also launches them only where this much is clear.
+        /// </summary>
+        public const float WALL_LOOK_AHEAD = 12f;
 
         public static SkillDef asteroidJaegerDef;
         public static SkillDef multilockHailDef;
@@ -44,10 +49,10 @@ namespace TweyenR2RMod.Survivors.Tweyen
             string prefix = TweyenSurvivor.TWEYEN_PREFIX;
             Modules.Language.Add(prefix + "SECONDARY_ASTEROID_JAEGER_NAME", "Asteroid Jaeger");
             Modules.Language.Add(prefix + "SECONDARY_ASTEROID_JAEGER_DESCRIPTION",
-                $"Hold to aim and mark enemies (max. {BASE_MAX_ARROWS}). Use your Primary Skill while aiming to fire homing arrows at each mark for <style=cIsDamage>{100f * DAMAGE_COEFFICIENT:0}% damage</style> per arrow.");
+                $"Hold to aim and mark enemies (max. {BASE_MAX_ARROWS}). Use your Primary Skill while aiming to fire homing arrows at each mark for <style=cIsDamage>{100f * DAMAGE_COEFFICIENT:0}% damage</style> <style=cStack>(+{100f * DAMAGE_PER_ULTRASIGHT:0}% per Ultrasight stack)</style> per arrow.");
             Modules.Language.Add(prefix + "PRIMARY_MULTILOCK_HAIL_NAME", "Multilock Hail");
             Modules.Language.Add(prefix + "PRIMARY_MULTILOCK_HAIL_DESCRIPTION",
-                $"Each mark adds a charge. Fire every charge as a homing arrow at its marked enemy for <style=cIsDamage>{100f * DAMAGE_COEFFICIENT:0}% damage</style>.");
+                $"Each mark adds a charge. Fire every charge as a homing arrow at its marked enemy for <style=cIsDamage>{100f * DAMAGE_COEFFICIENT:0}% damage</style> <style=cStack>(+{100f * DAMAGE_PER_ULTRASIGHT:0}% per Ultrasight stack)</style>.");
 
             asteroidJaegerDef = Skills.CreateSkillDef<AsteroidJaegerSkillDef>(new SkillDefInfo
             {
@@ -106,7 +111,9 @@ namespace TweyenR2RMod.Survivors.Tweyen
             multilockArrow = TweyenArrows.Create<MultilockArrowImpact>("TweyenMultilockArrow");
             multilockArrow.GetComponent<ProjectileController>().procCoefficient = PROC_COEFFICIENT;
             multilockArrow.GetComponent<ProjectileDamage>().damageType = DamageTypeCombo.GenericSecondary;
-            multilockArrow.AddComponent<ProjectileHomingDelay>().delay = HOMING_DELAY;
+            ProjectileHomingDelay homingDelay = multilockArrow.AddComponent<ProjectileHomingDelay>();
+            homingDelay.delay = HOMING_DELAY;
+            homingDelay.wallLookAhead = WALL_LOOK_AHEAD;
             // each arrow keeps the enemy it was fired at and never looks for another: if that enemy dies, it flies on
             // in a straight line
             foreach (ProjectileDirectionalTargetFinder finder in multilockArrow.GetComponents<ProjectileDirectionalTargetFinder>())
